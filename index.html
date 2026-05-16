@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +33,93 @@
             background-color: #1e1f20; color: #fff; font-size: 1rem; outline: none;
         }
         input:focus { border-color: #a8c7fa; }
+        button {
+            padding: 0 24px; border-radius: 24px; border: none;
+            background-color: #a8c7fa; color: #041e49; font-weight: bold;
+            font-size: 1rem; cursor: pointer; transition: background 0.2s;
+        }
+        button:hover { background-color: #c2e7ff; }
+        button:disabled { background-color: #4d4d4d; color: #808080; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Claude AI Chat (Via Agent Router)</h1>
+    </header>
+
+    <div id="chatContainer">
+        <div class="message ai">Hello Ayan! Ab backend 100% live hai. Kuch bhi puch kar test karo!</div>
+    </div>
+
+    <div id="inputContainer">
+        <input type="text" id="userInput" placeholder="Ask something..." onkeypress="handleKeyPress(event)">
+        <button id="sendBtn" onclick="askAI()">Send</button>
+    </div>
+
+    <script>
+        const BACKEND_URL = "https://lwyeiaons-0h.hf.space/api/chat";
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') askAI();
+        }
+
+        async function askAI() {
+            const inputEl = document.getElementById('userInput');
+            const chatContainer = document.getElementById('chatContainer');
+            const sendBtn = document.getElementById('sendBtn');
+            const prompt = inputEl.value.trim();
+
+            if (!prompt) return;
+
+            appendMessage(prompt, 'user');
+            inputEl.value = '';
+            
+            sendBtn.disabled = true;
+            const loadingDiv = appendMessage('Thinking...', 'ai');
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                const data = await response.json();
+                console.log("Response data:", data);
+
+                // Naye Anthropic structure ko successfully parse karne ke liye handles:
+                if (data.content && data.content[0] && data.content[0].text) {
+                    loadingDiv.innerText = data.content[0].text;
+                } else if (data.choices && data.choices[0] && data.choices[0].message) {
+                    loadingDiv.innerText = data.choices[0].message.content;
+                } else if (data.error) {
+                    loadingDiv.innerText = "API Error: " + (data.error.message || JSON.stringify(data.error));
+                } else {
+                    loadingDiv.innerText = "Response parse nahi ho saki. Raw response check karein.";
+                }
+
+            } catch (error) {
+                console.error("Frontend Error:", error);
+                loadingDiv.innerText = "Error: Server se sahi connect nahi ho paaya.";
+            } finally {
+                sendBtn.disabled = false;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const chatContainer = document.getElementById('chatContainer');
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender);
+            msgDiv.innerText = text;
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return msgDiv;
+        }
+    </script>
+</body>
+</html>
         button {
             padding: 0 24px; border-radius: 24px; border: none;
             background-color: #a8c7fa; color: #041e49; font-weight: bold;
